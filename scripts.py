@@ -1,10 +1,6 @@
-#from scripts import improve_school_result_script
-#improve_school_result_script('Семен', 'Математика')
-
 import random
 
 from django.core.exceptions import MultipleObjectsReturned
-
 from datacenter.models import Lesson, Schoolkid, Commendation, Mark, Chastisement
 
 
@@ -12,7 +8,6 @@ class NameError(Exception):
 
     def __init__(self, message):
         self.message = message
-        # переопределяется конструктор встроенного класса `Exception()`
         super().__init__(self.message)
 
 
@@ -26,7 +21,6 @@ class DiaryEditor:
             print(e)
 
     def improve_school_result(self, lesson_name, new_mark=5, bad_mark=[2, 3]):
-
         self.fix_marks(new_mark, bad_mark)
         self.remove_chastisements()
         try:
@@ -38,7 +32,6 @@ class DiaryEditor:
 
 
     def get_schoolkid(self):
-
         if not self.schoolkid_name:
             return False
         try:
@@ -59,7 +52,6 @@ class DiaryEditor:
         child_chastisement.delete()
 
     def create_commendation(self, lesson_name):
-
         if not lesson_name:
             raise NameError('Название предмета не введено. Посторите ввод.')
 
@@ -96,6 +88,7 @@ class DiaryEditor:
         for parallel_lesson in parallel_lessons.order_by('-date'):
             if not child_commendation.filter(created=parallel_lesson.date).exists():
                 return parallel_lesson
+
 
 def improve_school_result_script(schoolkid_name,lesson_name, new_mark=5, bad_mark=[2, 3]):
 
