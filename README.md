@@ -18,8 +18,8 @@
 	Python .....
 	Type "help", "copyright", "credits" or "license" for more information.
 	(InteractiveConsole)
-    >>> from scripts import improve_school_result_script
-    >>> improve_school_result_script('INPUT NAME', 'INPUTLESSON NAME')
+    >>> from scripts import improve_school_results
+    >>> improve_school_results('INPUT NAME', 'INPUTLESSON NAME')
     School result corrected.
  ```
 

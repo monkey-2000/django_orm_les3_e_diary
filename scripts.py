@@ -11,89 +11,77 @@ class NameError(Exception):
         super().__init__(self.message)
 
 
-class DiaryEditor:
-
-    def __init__(self, schoolkid_name='Фролов Иван'):
-        self.schoolkid_name = schoolkid_name
-        try:
-            self.schoolkid = self.get_schoolkid()
-        except NameError as e:
-            print(e)
-
-    def improve_school_result(self, lesson_name, new_mark=5, bad_mark=[2, 3]):
-        self.fix_marks(new_mark, bad_mark)
-        self.remove_chastisements()
-        try:
-            self.create_commendation(lesson_name)
-        except NameError as err:
-            print(err)
-        else:
-            print('School result corrected.')
-
-
-    def get_schoolkid(self):
-        if not self.schoolkid_name:
-            return False
-        try:
-            child = Schoolkid.objects.get(full_name__contains=self.schoolkid_name)
-        except Schoolkid.DoesNotExist:
-            message = f'Имя  "{self.schoolkid_name}" не найдено в БД. Введите другое.'
-            raise NameError(message)
-        except MultipleObjectsReturned:
-            message = f'Для имени "{self.schoolkid_name}" найдено несколько вариантов. Конкретизируйте запрос.'
-            raise NameError(message)
-        return child
-
-    def fix_marks(self, new_mark, bad_mark):
-        Mark.objects.filter(schoolkid=self.schoolkid, points__in=bad_mark).update(points=new_mark)
-
-    def remove_chastisements(self):
-        child_chastisement = Chastisement.objects.filter(schoolkid=self.schoolkid)
-        child_chastisement.delete()
-
-    def create_commendation(self, lesson_name):
-        if not lesson_name:
-            raise NameError('Название предмета не введено. Посторите ввод.')
-
-        commendation_texts = ['Молодец!',
-                              'Ты меня очень обрадовал!',
-                              'Великолепно!',
-                              ]
-
-        commendation_text = random.choice(commendation_texts)
-
-        lessons = Lesson.objects.filter(subject__title__contains=lesson_name)
-
-        if not lessons.exists():
-            message = f'Предмет "{lesson_name}" не найден. Введите другое название предмета.'
-            raise NameError(message)
-
-        commendation_lesson = self.lesson_without_commendation(lessons)
-        Commendation.objects.create(
-            created=commendation_lesson.date,
-            schoolkid=self.schoolkid,
-            subject=commendation_lesson.subject,
-            teacher=commendation_lesson.teacher,
-            text=commendation_text
-        )
-
-    def lesson_without_commendation(self, lessons):
-        parallel_lessons = lessons.filter(
-            year_of_study__contains=self.schoolkid.year_of_study,
-            group_letter__contains =self.schoolkid.group_letter
-        )
-
-        child_commendation = Commendation.objects.filter(schoolkid=self.schoolkid)
-
-        for parallel_lesson in parallel_lessons.order_by('-date'):
-            if not child_commendation.filter(created=parallel_lesson.date).exists():
-                return parallel_lesson
-
-
-def improve_school_result_script(schoolkid_name,lesson_name, new_mark=5, bad_mark=[2, 3]):
-
-    a = DiaryEditor(schoolkid_name)
+def get_schoolkid(schoolkid_name):
     try:
-        a.improve_school_result(lesson_name, new_mark, bad_mark)
-    except AttributeError:
-        pass
+        child = Schoolkid.objects.get(full_name__contains=schoolkid_name)
+    except Schoolkid.DoesNotExist:
+        message = f'Имя  "{schoolkid_name}" не найдено в БД. Введите другое.'
+        raise NameError(message)
+    except MultipleObjectsReturned:
+        message = f'Для имени "{schoolkid_name}" найдено несколько вариантов. Конкретизируйте запрос.'
+        raise NameError(message)
+    return child
+
+
+def fix_marks(schoolkid, new_mark, bad_mark):
+    Mark.objects.filter(schoolkid=schoolkid, points__in=bad_mark).update(points=new_mark)
+
+
+def remove_chastisements(schoolkid):
+    child_chastisement = Chastisement.objects.filter(schoolkid=schoolkid)
+    child_chastisement.delete()
+
+
+def lesson_without_commendation(schoolkid, lessons):
+    parallel_lessons = lessons.filter(
+        year_of_study__contains=schoolkid.year_of_study,
+        group_letter__contains =schoolkid.group_letter
+    )
+
+    child_commendation = Commendation.objects.filter(schoolkid=schoolkid)
+
+    for parallel_lesson in parallel_lessons.order_by('-date'):
+        if not child_commendation.filter(created=parallel_lesson.date).exists():
+            return parallel_lesson
+
+
+def create_commendation(schoolkid, lesson_name):
+    commendation_texts = ['Молодец!',
+                          'Ты меня очень обрадовал!',
+                          'Великолепно!',
+                          ]
+
+    commendation_text = random.choice(commendation_texts)
+
+    lessons = Lesson.objects.filter(subject__title__contains=lesson_name)
+
+    if not lessons.exists():
+        message = f'Предмет "{lesson_name}" не найден. Введите другое название предмета.'
+        raise NameError(message)
+
+    commendation_lesson = lesson_without_commendation(schoolkid, lessons)
+    Commendation.objects.create(
+        created=commendation_lesson.date,
+        schoolkid=schoolkid,
+        subject=commendation_lesson.subject,
+        teacher=commendation_lesson.teacher,
+        text=commendation_text
+    )
+
+
+def improve_school_results(schoolkid_name, lesson_name, new_mark=5, bad_marks=[2, 3]):
+
+    if not lesson_name:
+        print('Название предмета не введено. Повторите ввод.')
+        exit(2)
+
+    try:
+        child = get_schoolkid(schoolkid_name)
+        fix_marks(child, new_mark, bad_marks)
+        remove_chastisements(child)
+        create_commendation(child, lesson_name)
+    except NameError as err:
+        print(err)
+        exit(2)
+    else:
+        print('School results corrected.')
